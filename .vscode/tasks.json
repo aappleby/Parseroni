@@ -1,0 +1,32 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "build_parseroni",
+      "command": "ninja",
+      "args": [
+        //"bin/parseroni"
+      ],
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "type": "shell",
+      "label": "build_parseroni_test",
+      "command": "ninja",
+      "args": [
+        "bin/parseroni_test"
+      ],
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+
+  ]
+}

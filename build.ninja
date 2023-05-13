@@ -1,0 +1,37 @@
+include rules.ninja
+
+################################################################################
+# Config
+
+build_mode   = -DCONFIG_DEBUG -O0
+#build_mode   = -DCONFIG_RELEASE -O3
+#build_mode   = -DCONFIG_FASTMODE -O3
+
+default_gpp      = g++ -g -MMD -std=gnu++2a
+default_gcc      = gcc -g -MMD
+default_includes = -I. -Isymlinks/MetroLib
+
+################################################################################
+
+build obj/parseroni/ParseroniApp.o : compile_cpp parseroni/ParseroniApp.cpp
+build obj/parseroni/Parser.o       : compile_cpp parseroni/Parser.cpp
+
+build obj/tests/ParseroniTest.o : compile_cpp tests/ParseroniTest.cpp
+
+build obj/MetroLib : run_command
+  command = ninja -C symlinks/MetroLib
+
+build bin/parseroni : link $
+  obj/parseroni/Parser.o $
+  obj/parseroni/ParseroniApp.o $
+  symlinks/MetroLib/bin/metrolib/libcore.a $
+  | obj/MetroLib
+
+build bin/parseroni_test : link $
+  obj/parseroni/Parser.o $
+  obj/tests/ParseroniTest.o $
+  symlinks/MetroLib/bin/metrolib/libcore.a $
+  | obj/MetroLib
+
+build run_parseroni_test : run_command bin/parseroni_test
+  command = bin/parseroni_test

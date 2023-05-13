@@ -1,0 +1,41 @@
+// clang-format off
+{
+  "configurations": [
+    {
+      "name": "Parseroni",
+      "preLaunchTask": "build_parseroni",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/parseroni",
+      "cwd": "${workspaceFolder}",
+      "args" : [],
+      "setupCommands": [
+        {
+          // Display content in STL containers pretty
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "Parseroni Test",
+      "preLaunchTask": "build_parseroni_test",
+      "type": "cppdbg",
+      "request": "launch",
+      //"program": "${workspaceFolder}/bin/parseroni",
+      "program": "${workspaceFolder}/bin/parseroni_test",
+      "cwd": "${workspaceFolder}",
+      "args" : [],
+      "setupCommands": [
+        {
+          // Display content in STL containers pretty
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}
+// clang-format on

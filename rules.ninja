@@ -1,0 +1,17 @@
+################################################################################
+
+rule compile_cpp
+  command = ${default_gpp} ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
+  depfile = ${out}.d
+  deps = gcc
+
+rule compile_c
+  command = ${default_gcc} ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
+  depfile = ${out}.d
+  deps = gcc
+
+rule link
+  command = ${default_gpp} ${build_mode} ${in} ${libs} -o ${out}
+
+rule run_command
+  command = $command
