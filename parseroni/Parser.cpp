@@ -484,6 +484,16 @@ std::optional<PPreproc*> Parser::take_preproc() {
 
 //------------------------------------------------------------------------------
 
+/*
+<translation-unit> ::= {<external-declaration>}*
+
+<external-declaration> ::= <function-definition>
+                         | <declaration>
+
+<declaration> ::=  {<declaration-specifier>}+ {<init-declarator>}* ;
+
+*/
+
 std::optional<PTranslationUnit*> Parser::take_translation_unit() {
   start_span();
 
