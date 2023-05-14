@@ -1,5 +1,7 @@
 #include "parseroni/Parser.h"
 
+#include "parseroni/Combinators.h"
+
 #include "metrolib/core/Tests.h"
 #include <memory.h>
 
@@ -36,6 +38,87 @@ TestResults test_basic() {
 
   p.load("a}");
   EXPECT_EQ(false, p.take_until('}', 2).has_value());
+
+  TEST_DONE();
+}
+
+//------------------------------------------------------------------------------
+//  a+++++b is interpreted as a ++ ++ + b, not as a ++ + ++ b,
+
+TestResults test_tokens() {
+  TEST_INIT();
+
+  Parser p;
+  std::optional<cspan> t;
+
+  p.load("a+++++b");
+  t = p.take_token();
+  EXPECT_TRUE(t && t.value() == "a");
+  t = p.take_token();
+  EXPECT_TRUE(t && t.value() == "++");
+  t = p.take_token();
+  EXPECT_TRUE(t && t.value() == "++");
+  t = p.take_token();
+  EXPECT_TRUE(t && t.value() == "+");
+  t = p.take_token();
+  EXPECT_TRUE(t && t.value() == "b");
+
+  TEST_DONE();
+}
+
+//------------------------------------------------------------------------------
+
+TestResults test_match(std::function<const char*(const char*)> m, const char* text) {
+  TestResults results;
+  auto end = text + strlen(text);
+  EXPECT_EQ(end, m(text));
+  return results;
+}
+
+TestResults test_no_match(std::function<const char*(const char*)> m, const char* text) {
+  TestResults results;
+  EXPECT_EQ(nullptr, m(text));
+  return results;
+}
+
+TestResults test_partial_match(std::function<const char*(const char*)> m, const char* text) {
+  TestResults results;
+  auto end = text + strlen(text);
+  auto match = m(text);
+  EXPECT_NE(nullptr, match);
+  EXPECT_NE(end, match);
+  return results;
+}
+
+TestResults test_match_int() {
+  TEST_INIT();
+
+  results << test_no_match(match_int, "A");
+  results << test_no_match(match_int, "");
+  results << test_no_match(match_int, "- 1");
+
+  results << test_match(match_int, "0b01010101");
+  results << test_match(match_int, "0B01010101");
+  results << test_match(match_int, "-0b01010101");
+  results << test_match(match_int, "-0B01010101");
+
+  results << test_match(match_int, "01234567");
+  results << test_match(match_int, "-01234567");
+
+  results << test_match(match_int, "1234567890");
+  results << test_match(match_int, "-1234567890");
+
+  results << test_partial_match(match_int, "01234567890");
+  results << test_partial_match(match_int, "-01234567890");
+
+  results << test_match(match_int, "0x0123456789ABCDEF");
+  results << test_match(match_int, "0x0123456789abcdef");
+  results << test_match(match_int, "0X0123456789ABCDEF");
+  results << test_match(match_int, "0X0123456789abcdef");
+  results << test_match(match_int, "-0x0123456789ABCDEF");
+  results << test_match(match_int, "-0x0123456789abcdef");
+  results << test_match(match_int, "-0X0123456789ABCDEF");
+  results << test_match(match_int, "-0X0123456789abcdef");
 
   TEST_DONE();
 }
@@ -454,11 +537,18 @@ int main(int argv, char** argc) {
 
 //------------------------------------------------------------------------------
 
+TestResults test_match_identifier() {
+}
+
+//------------------------------------------------------------------------------
+
 int main(int argc, char** argv) {
   LOG_G("Hello Test World\n");
+
   TestResults r;
   r << test_basic();
 
+  r << test_match_int();
   r << test_take_int();
   r << test_take_lit();
   r << test_take_str();

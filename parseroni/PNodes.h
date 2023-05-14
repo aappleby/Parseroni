@@ -4,9 +4,24 @@
 
 #include <stdint.h>
 #include <vector>
-#include <span>
+//#include <span>
+#include <assert.h>
 
-typedef std::span<const char> cspan;
+//typedef std::span<const char> cspan;
+
+struct cspan {
+  const char* begin;
+  const char* end;
+
+  char operator[](size_t i) const {
+    assert(begin);
+    assert(i < size());
+    return begin[i];
+  }
+
+  size_t size() const { return end - begin; }
+  bool empty() const { return end == begin; }
+};
 
 void log_span(cspan s, uint32_t color = 0);
 

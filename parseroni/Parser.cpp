@@ -1,9 +1,197 @@
+/*
+The syntax of C in Backus-Naur Form
+
+<external-declaration> ::= <function-definition>
+                         | <declaration>
+
+<function-definition> ::= {<declaration-specifier>}* <declarator> {<declaration>}* <compound-statement>
+
+<declaration-specifier> ::= <storage-class-specifier>
+                          | <type-specifier>
+                          | <type-qualifier>
+
+<storage-class-specifier> ::= auto
+                            | register
+                            | static
+                            | extern
+                            | typedef
+
+
+<struct-or-union> ::= struct
+                    | union
+
+<struct-declaration> ::= {<specifier-qualifier>}* <struct-declarator-list>
+
+<specifier-qualifier> ::= <type-specifier>
+                        | <type-qualifier>
+
+<struct-declarator-list> ::= <struct-declarator>
+                           | <struct-declarator-list> , <struct-declarator>
+
+<direct-declarator> ::= <identifier>
+                      | ( <declarator> )
+                      | <direct-declarator> [ {<constant-expression>}? ]
+                      | <direct-declarator> ( <parameter-type-list> )
+                      | <direct-declarator> ( {<identifier>}* )
+
+<constant-expression> ::= <conditional-expression>
+
+<conditional-expression> ::= <logical-or-expression>
+                           | <logical-or-expression> ? <expression> : <conditional-expression>
+
+<logical-or-expression> ::= <logical-and-expression>
+                          | <logical-or-expression> || <logical-and-expression>
+
+<logical-and-expression> ::= <inclusive-or-expression>
+                           | <logical-and-expression> && <inclusive-or-expression>
+
+<inclusive-or-expression> ::= <exclusive-or-expression>
+                            | <inclusive-or-expression> | <exclusive-or-expression>
+
+<exclusive-or-expression> ::= <and-expression>
+                            | <exclusive-or-expression> ^ <and-expression>
+
+<and-expression> ::= <equality-expression>
+                   | <and-expression> & <equality-expression>
+
+<equality-expression> ::= <relational-expression>
+                        | <equality-expression> == <relational-expression>
+                        | <equality-expression> != <relational-expression>
+
+<relational-expression> ::= <shift-expression>
+                          | <relational-expression> < <shift-expression>
+                          | <relational-expression> > <shift-expression>
+                          | <relational-expression> <= <shift-expression>
+                          | <relational-expression> >= <shift-expression>
+
+<shift-expression> ::= <additive-expression>
+                     | <shift-expression> << <additive-expression>
+                     | <shift-expression> >> <additive-expression>
+
+<additive-expression> ::= <multiplicative-expression>
+                        | <additive-expression> + <multiplicative-expression>
+                        | <additive-expression> - <multiplicative-expression>
+
+<multiplicative-expression> ::= <cast-expression>
+                              | <multiplicative-expression> * <cast-expression>
+                              | <multiplicative-expression> / <cast-expression>
+                              | <multiplicative-expression> % <cast-expression>
+
+<cast-expression> ::= <unary-expression>
+                    | ( <type-name> ) <cast-expression>
+
+<unary-expression> ::= <postfix-expression>
+                     | ++ <unary-expression>
+                     | -- <unary-expression>
+                     | <unary-operator> <cast-expression>
+                     | sizeof <unary-expression>
+                     | sizeof <type-name>
+
+<postfix-expression> ::= <primary-expression>
+                       | <postfix-expression> [ <expression> ]
+                       | <postfix-expression> ( {<assignment-expression>}* )
+                       | <postfix-expression> . <identifier>
+                       | <postfix-expression> -> <identifier>
+                       | <postfix-expression> ++
+                       | <postfix-expression> --
+
+<primary-expression> ::= <identifier>
+                       | <constant>
+                       | <string>
+                       | ( <expression> )
+
+<constant> ::= <integer-constant>
+             | <character-constant>
+             | <floating-constant>
+             | <enumeration-constant>
+
+<expression> ::= <assignment-expression>
+               | <expression> , <assignment-expression>
+
+<assignment-expression> ::= <conditional-expression>
+                          | <unary-expression> <assignment-operator> <assignment-expression>
+
+<assignment-operator> ::= = | *= | /= | %= | += | -= | <<= | >>= | &=| ^= | |=
+<unary-operator> ::= & | * | + | - | ~ | !
+
+<type-name> ::= {<specifier-qualifier>}+ {<abstract-declarator>}?
+
+<parameter-type-list> ::= <parameter-list> | <parameter-list> , ...
+
+<parameter-list> ::= <parameter-declaration> | <parameter-list> , <parameter-declaration>
+
+<parameter-declaration> ::= {<declaration-specifier>}+ <declarator>
+                          | {<declaration-specifier>}+ <abstract-declarator>
+                          | {<declaration-specifier>}+
+
+<abstract-declarator> ::= <pointer>
+                        | <pointer> <direct-abstract-declarator>
+                        | <direct-abstract-declarator>
+
+<direct-abstract-declarator> ::=  ( <abstract-declarator> )
+                               | {<direct-abstract-declarator>}? [ {<constant-expression>}? ]
+                               | {<direct-abstract-declarator>}? ( {<parameter-type-list>}? )
+
+<enum-specifier> ::= enum <identifier> { <enumerator-list> }
+                   | enum { <enumerator-list> }
+                   | enum <identifier>
+
+
+<enumerator> ::= <identifier>
+               | <identifier> = <constant-expression>
+
+<typedef-name> ::= <identifier>
+
+<declaration> ::=  {<declaration-specifier>}+ {<init-declarator>}* ;
+
+<init-declarator> ::= <declarator>
+                    | <declarator> = <initializer>
+
+<initializer> ::= <assignment-expression>
+                | { <initializer-list> }
+                | { <initializer-list> , }
+
+<initializer-list> ::= <initializer>
+                     | <initializer-list> , <initializer>
+
+<compound-statement> ::= { {<declaration>}* {<statement>}* }
+
+<statement> ::= <labeled-statement>
+              | <expression-statement>
+              | <compound-statement>
+              | <selection-statement>
+              | <iteration-statement>
+              | <jump-statement>
+
+<labeled-statement> ::= <identifier> : <statement>
+                      | case <constant-expression> : <statement>
+                      | default : <statement>
+
+<expression-statement> ::= {<expression>}? ;
+
+<selection-statement> ::= if ( <expression> ) <statement>
+                        | if ( <expression> ) <statement> else <statement>
+                        | switch ( <expression> ) <statement>
+
+<iteration-statement> ::= while ( <expression> ) <statement>
+                        | do <statement> while ( <expression> ) ;
+                        | for ( {<expression>}? ; {<expression>}? ; {<expression>}? ) <statement>
+
+<jump-statement> ::= goto <identifier> ;
+                   | continue ;
+                   | break ;
+                   | return {<expression>}? ;
+
+This grammar was adapted from Section A13 of The C programming language, 2nd edition, by Brian W. Kernighan and Dennis M. Ritchie,Prentice Hall, 1988.
+*/
+
 #include "parseroni/Parser.h"
 
 #include "metrolib/core/Log.h"
 
 #include <memory>
 #include <string.h>
+#include <assert.h>
 
 using std::make_unique;
 
@@ -23,7 +211,7 @@ All punctuations in C:
 
 void log_span(cspan s, uint32_t color) {
   char buf[256] = {0};
-  memcpy(buf, s.data(), s.size());
+  memcpy(buf, s.begin, s.size());
   buf[s.size()] = 0;
   LOG_C(color, buf);
 }
@@ -74,6 +262,150 @@ bool char_to_digit(char c, int base, int& out) {
     return false;
   }
 }
+
+const char* chars_graph = "!\"#%&'()*+,-./:;<=>?[\\]^_{|}~";
+
+//------------------------------------------------------------------------------
+
+#if 0
+
+node take_identifier() {
+  return one(_a-zA-Z) + any(_a-zA-A);
+}
+
+#endif
+
+/*
+Lexical elements[15]==
+  Identifiers[16]
+  Floating constants[44]
+  Integer constants[48]
+  Character constants[52]
+  String literals[53]
+  Comments[55]
+
+identifier:
+  [_a-zA-Z][_a-zA-Z0-9]*
+
+comment:
+  | //.*$
+  | /_*(^*_/)*_/
+
+
+
+
+token:
+  keyword
+  identifier
+  constant
+  string-literal
+  punctuator
+preprocessing-token:
+  header-name
+  identifier
+  pp-number
+  character-constant
+  string-literal
+  punctuator
+  each non-white-space character that cannot be one of the above
+
+keywords:
+  auto
+  break
+  case
+  char
+  const
+  continue
+  default
+  do
+  double
+  else
+  enum
+  extern
+  float
+  for
+  goto
+  if
+  inline
+  int
+  long
+  register
+  restrict
+  return
+  short
+  signed
+  sizeof
+  static
+  struct
+  switch
+  typedef
+  union
+  unsigned
+  void
+  volatile
+  while
+  _Alignas
+  _Alignof
+  _Atomic
+  _Bool
+  _Complex
+  _Generic
+  _Imaginary
+  _Noreturn
+  _Static_assert
+  _Thread_local
+*/
+
+std::optional<cspan> Parser::take_token() {
+  start_span();
+
+  if (isalpha(*cursor)) {
+    if (take_identifier()) {
+      return take_top_span();
+    }
+  }
+  else if (isdigit(*cursor)) {
+    if (take_number()) {
+      return take_top_span();
+    }
+  }
+  else if (*cursor == '#') {
+    cursor++;
+    if (take_identifier()) {
+      return take_top_span();
+    }
+  }
+  else if (*cursor == '"') {
+    if (take_string()) {
+      return take_top_span();
+    }
+  }
+  else if (*cursor == '<') {
+    assert(false);
+  }
+
+  return drop_span();
+}
+
+//------------------------------------------------------------------------------
+
+std::optional<cspan> Parser::take_string() {
+  return std::nullopt;
+}
+
+std::optional<cspan> Parser::take_number() {
+  return std::nullopt;
+}
+
+//------------------------------------------------------------------------------
+
+#if 0
+node take_enumerator() {
+  return (take_enum_constant() + take_("=") + take_constant_expression()) ||
+         take_enum_constant();
+}
+
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -230,6 +562,12 @@ std::optional<cspan> Parser::take_ws() {
   }
 }
 
+std::optional<cspan> Parser::take_ws_opt() {
+  start_span();
+  while(isspace(*cursor) && cursor < source_end) cursor++;
+  return take_top_span();
+}
+
 //------------------------------------------------------------------------------
 
 std::optional<cspan> Parser::take_str() {
@@ -260,11 +598,7 @@ std::optional<cspan> Parser::take_int() {
   start_span();
 
   // Consume a leading minus sign if present.
-  if (take('-')) {
-    // FIXME should whitespace be allowed between the minus and the number?
-    // Answering yes for now.
-    take_ws();
-  }
+  take('-');
 
   if (take("0x")) {
     // Hexadecimal
@@ -296,45 +630,6 @@ std::optional<cspan> Parser::take_int() {
   else {
     return drop_span();
   }
-
-
-
-#if 0
-  if (!isdigit(*cursor)) {
-    return drop_span();
-  }
-
-  if (*cursor != '0') {
-    // starts with [1-9]
-    base = 10;
-  }
-  else if (isdigit(cursor[1])) {
-    // starts with 0[1-9]
-    cursor += 1;
-    base = 8;
-  }
-  else if (cursor[1] == 'b') {
-    // starts with 0b
-    cursor += 2;
-    base = 2;
-  }
-  else if (cursor[1] == 'x') {
-    // starts with 0x
-    cursor += 2;
-    base = 16;
-  }
-  else {
-    // bare 0 followed by punctuation
-    return take_top_span();
-  }
-
-  if (base && take_digits(base)) {
-    return take_top_span();
-  }
-  else {
-    return drop_span();
-  }
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -349,7 +644,7 @@ std::optional<PInt> Parser::take_int_as_pint() {
   if (negative) cursor++;
 
   if (!isdigit(*cursor)) {
-    return drop_span();
+    drop_span(); return std::nullopt;
   }
 
   if (*cursor != '0') {
@@ -377,17 +672,17 @@ std::optional<PInt> Parser::take_int_as_pint() {
   }
   else {
     // bad prefix
-    return drop_span();
+    drop_span(); return std::nullopt;
   }
 
-  if (base && parse_digits(base, accum)) {
+  if (base && parse_digits(cursor, base, accum)) {
     if (negative && accum > 0x8000000000000000) {
-      return drop_span();
+      drop_span(); return std::nullopt;
     }
     return PInt(take_top_span(), negative, accum);
   }
   else {
-    return drop_span();
+    drop_span(); return std::nullopt;
   }
 }
 
@@ -465,13 +760,13 @@ std::optional<PPreproc*> Parser::take_preproc() {
   start_span();
 
   auto lit_include = take("#include");
-  if (!lit_include) { return drop_span(); }
+  if (!lit_include) { drop_span(); return std::nullopt; }
 
   auto lit_ws = take_ws();
-  if (!lit_ws) { return drop_span(); }
+  if (!lit_ws) { drop_span(); return std::nullopt; }
 
   auto lit_path = take_include_path();
-  if (!lit_path) { return drop_span(); }
+  if (!lit_path) { drop_span(); return std::nullopt; }
 
   auto result = new PPreprocInclude();
   result->span = take_top_span();
@@ -484,15 +779,264 @@ std::optional<PPreproc*> Parser::take_preproc() {
 
 //------------------------------------------------------------------------------
 
+std::optional<cspan> Parser::take_primitive_type() {
+ start_span();
+  if (take("void") || take("char") || take("short") || take("int") ||
+      take("long") || take("float") || take("double")) {
+    return take_top_span();
+  }
+  else {
+    return drop_span();
+  }
+}
+
+//------------------------------------------------------------------------------
+
+std::optional<cspan> Parser::take_signed_specifier() {
+ start_span();
+  if (take("signed") || take("unsigned")) {
+    return take_top_span();
+  }
+  else {
+    return drop_span();
+  }
+}
+
+//------------------------------------------------------------------------------
+
+std::optional<cspan> Parser::take_storage_class_specifier() {
+  start_span();
+  if (take("auto") || take("register") || take("static") || take("extern") || take("typedef")) {
+    return take_top_span();
+  }
+  else {
+    return drop_span();
+  }
+}
+
+//------------------------------------------------------------------------------
 /*
-<translation-unit> ::= {<external-declaration>}*
-
-<external-declaration> ::= <function-definition>
-                         | <declaration>
-
-<declaration> ::=  {<declaration-specifier>}+ {<init-declarator>}* ;
-
+<enum-specifier> ::= enum <identifier> { <enumerator-list> }
+                  | enum { <enumerator-list> }
+                  | enum <identifier>
 */
+
+std::optional<cspan> Parser::take_enum_specifier() {
+  start_span();
+
+  // Mandatory enum
+  if (!take("enum")) return drop_span();
+
+  // Mandatory whitespace
+  if (!take_ws()) return drop_span();
+
+  // Must have either an identifier or an enumerator list;
+  bool ok = false;
+
+  // Optional identifier
+  if (take_identifier()) {
+    take_ws_opt();
+    ok = true;
+  }
+
+  // Optional enumerator list
+  auto bookmark = cursor;
+  if (take('{') && take_ws_opt() && take_enumerator_list() && take_ws_opt() && take('}')) {
+    ok = true;
+  }
+  else {
+    cursor = bookmark;
+  }
+
+  if (ok) {
+    return take_top_span();
+  }
+  else {
+    return drop_span();
+  }
+}
+
+//------------------------------------------------------------------------------
+// <enumerator> ::= <identifier>
+//                | <identifier> = <constant-expression>
+
+std::optional<cspan> Parser::take_enumerator() {
+  start_span();
+
+  if (!take_identifier()) return drop_span();
+
+  if (take('=')) {
+    if (!take_constant_expression()) return drop_span();
+  }
+
+  return take_top_span();
+}
+
+
+//------------------------------------------------------------------------------
+// <enumerator-list> ::= <enumerator> | <enumerator-list> , <enumerator>
+
+std::optional<cspan> Parser::take_enumerator_list() {
+  start_span();
+
+  if (!take_enumerator()) return drop_span();
+
+  while(cursor < source_end) {
+    take_ws();
+    if (!take(',')) break;
+    take_ws();
+    if (!take_enumerator()) break;
+  }
+
+  return take_top_span();
+}
+
+//------------------------------------------------------------------------------
+// alpha alnum*
+
+std::optional<cspan> Parser::take_identifier() {
+  start_span();
+
+  if (!isalpha(*cursor) && !(*cursor == '_')) return drop_span();
+  cursor++;
+
+  for (;cursor < source_end; cursor++) {
+    if (!isalnum(*cursor) && !isdigit(*cursor) && (*cursor != '_')) {
+      break;
+    }
+  }
+
+  return take_top_span();
+}
+
+//------------------------------------------------------------------------------
+// type_specifier = primitive_type | signed_specifier | struct_or_union_specifier | enum_specifier | typedef_name
+
+std::optional<cspan> Parser::take_type_specifier() {
+  start_span();
+
+  if (take_primitive_type() ||
+      take_signed_specifier() ||
+      take_struct_or_union_specifier() ||
+      take_enum_specifier() ||
+      take_typedef_name()) {
+    return take_top_span();
+  }
+
+  return drop_span();
+}
+
+//------------------------------------------------------------------------------
+// typedef_name = identifier
+
+std::optional<cspan> Parser::take_typedef_name() {
+  return take_identifier();
+}
+
+//------------------------------------------------------------------------------
+// struct_or_union_specifier =
+//   struct_or_union identifier { {struct_declaration}+ } |
+//   struct_or_union { {struct_declaration}+ } |
+//   struct_or_union identifier
+
+std::optional<cspan> Parser::take_struct_or_union_specifier() {
+  start_span();
+
+  if (!take("struct") && !take("union")) return drop_span();
+
+  bool ok = false;
+
+  if (take_identifier()) {
+    ok = true;
+  }
+
+  if (take_struct_declaration()) {
+    ok = true;
+  }
+
+  if (ok) {
+    return take_top_span();
+  }
+  else {
+    return drop_span();
+  }
+}
+
+//------------------------------------------------------------------------------
+//
+
+std::optional<cspan> Parser::take_constant_expression() {
+  assert(false);
+  return std::nullopt;
+}
+
+//------------------------------------------------------------------------------
+// struct_declaration = {specifier_qualifier}* struct_declarator_list
+
+std::optional<cspan> Parser::take_struct_declaration() {
+  assert(false);
+  return std::nullopt;
+}
+
+//------------------------------------------------------------------------------
+// specifier_qualifier = type_specifier | type_qualifier
+
+std::optional<cspan> Parser::take_specifier_qualifier() {
+  assert(false);
+  return std::nullopt;
+}
+
+//------------------------------------------------------------------------------
+// struct_declarator_list = struct_declarator (, struct_declarator)*
+
+std::optional<cspan> Parser::take_struct_declarator_list() {
+  assert(false);
+  return std::nullopt;
+}
+
+//------------------------------------------------------------------------------
+// struct_declarator =
+// | declarator
+// | declarator : constant_expression
+// | : constant_expression
+
+std::optional<cspan> Parser::take_struct_declarator() {
+  assert(false);
+  return std::nullopt;
+}
+
+//------------------------------------------------------------------------------
+// declarator = {pointer}? direct_declarator
+
+std::optional<cspan> Parser::take_declarator() {
+  assert(false);
+  return std::nullopt;
+}
+
+//------------------------------------------------------------------------------
+// what's with the leading star here?
+// pointer = * {type_qualifier}* {pointer}?
+
+std::optional<cspan> Parser::take_pointer() {
+  assert(false);
+  return std::nullopt;
+}
+
+//------------------------------------------------------------------------------
+// type-qualifier = const | volatile
+
+std::optional<cspan> Parser::take_type_qualifier() {
+  start_span();
+  if (take("const") || take("volatile")) {
+    return take_top_span();
+  }
+  else {
+    return drop_span();
+  }
+}
+
+//------------------------------------------------------------------------------
+// translation-unit> = external_declaration*
 
 std::optional<PTranslationUnit*> Parser::take_translation_unit() {
   start_span();
@@ -514,15 +1058,13 @@ std::optional<PTranslationUnit*> Parser::take_translation_unit() {
 
 //------------------------------------------------------------------------------
 
-bool Parser::parse_digits(int base, uint64_t& out) {
-  start_span();
-
+bool Parser::parse_digits(const char* s, int base, uint64_t& out) {
   uint64_t accum = 0;
   int digits = 0;
 
-  while (*cursor && cursor < source_end) {
+  while (*s) {
     int digit = 0;
-    if (char_to_digit(*cursor, base, digit)) {
+    if (char_to_digit(*s, base, digit)) {
       uint64_t old_accum = accum;
       accum = accum * base + digit;
       if (accum < old_accum) return false;
@@ -531,17 +1073,66 @@ bool Parser::parse_digits(int base, uint64_t& out) {
       break;
     }
     digits++;
-    cursor++;
+    s++;
   }
 
-  if (isalpha(*cursor) || digits == 0) {
-    pop_cursor();
+  if (isalpha(*s) || digits == 0) {
     return false;
   }
 
   out = accum;
-  keep_cursor();
   return true;
+}
+
+
+bool Parser::parse_int(cspan s, PInt& out) {
+  int base = 0;
+  uint64_t accum = 0;
+
+  auto cursor = s.begin;
+
+  bool negative = *cursor == '-';
+  if (negative) cursor++;
+
+  if (*cursor != '0') {
+    // starts with [1-9]
+    base = 10;
+  }
+  else if (isdigit(cursor[1])) {
+    // starts with 0[1-9]
+    cursor += 1;
+    base = 8;
+  }
+  else if (cursor[1] == 'b') {
+    // starts with 0b
+    cursor += 2;
+    base = 2;
+  }
+  else if (cursor[1] == 'x') {
+    // starts with 0x
+    cursor += 2;
+    base = 16;
+  }
+  else if ((ispunct(cursor[1]) && cursor[1] != '_') || cursor[1] == 0) {
+    // bare 0 followed by punctuation
+    out = PInt(s, negative, 0);
+    return true;
+  }
+  else {
+    // bad prefix
+    return false;
+  }
+
+  if (base && parse_digits(cursor, base, accum)) {
+    if (negative && accum > 0x8000000000000000) {
+      return false;
+    }
+    out = PInt(s, negative, accum);
+    return true;
+  }
+  else {
+    return false;
+  }
 }
 
 //------------------------------------------------------------------------------

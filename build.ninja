@@ -4,7 +4,7 @@ include rules.ninja
 # Config
 
 build_mode   = -DCONFIG_DEBUG -O0
-#build_mode   = -DCONFIG_RELEASE -O3
+#build_mode   = -DCONFIG_RELEASE -O3 -fcf-protection=none -fno-stack-protector
 #build_mode   = -DCONFIG_FASTMODE -O3
 
 default_gpp      = g++ -g -MMD -std=gnu++2a
@@ -15,6 +15,7 @@ default_includes = -I. -Isymlinks/MetroLib
 
 build obj/parseroni/ParseroniApp.o : compile_cpp parseroni/ParseroniApp.cpp
 build obj/parseroni/Parser.o       : compile_cpp parseroni/Parser.cpp
+build obj/parseroni/Combinators.o  : compile_cpp parseroni/Combinators.cpp
 
 build obj/tests/ParseroniTest.o : compile_cpp tests/ParseroniTest.cpp
 
@@ -23,12 +24,14 @@ build obj/MetroLib : run_command
 
 build bin/parseroni : link $
   obj/parseroni/Parser.o $
+  obj/parseroni/Combinators.o $
   obj/parseroni/ParseroniApp.o $
   symlinks/MetroLib/bin/metrolib/libcore.a $
   | obj/MetroLib
 
 build bin/parseroni_test : link $
   obj/parseroni/Parser.o $
+  obj/parseroni/Combinators.o $
   obj/tests/ParseroniTest.o $
   symlinks/MetroLib/bin/metrolib/libcore.a $
   | obj/MetroLib
