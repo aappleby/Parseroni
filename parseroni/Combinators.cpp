@@ -3,7 +3,82 @@
 
 #include <string.h>
 
-using namespace Parseroni;
+using namespace parseroni;
+
+const char* origin = nullptr;
+
+//------------------------------------------------------------------------------
+
+const char* match_punct(const char* text) {
+  using trigraphs = Trigraphs<"...<<=>>=">;
+  using digraphs  = Digraphs<"---=->!=*=/=&&&=##%=^=+++=<<<===>=>>|=||">;
+  using unigraphs = Chars<"-,;:!?.()[]{}*/&#%^+<=>|~">;
+
+  using punct = Oneof<trigraphs, digraphs, unigraphs>;
+
+  return punct::match(text);
+}
+
+//------------------------------------------------------------------------------
+// Single-line comments
+
+const char* match_oneline_comment(const char* text) {
+  using start = Lit<"//">;
+  using body  = Any<Seq<Not<Char<'\n'>>, Char<>>>;
+  using eol   = Oneof<Char<'\n'>, NUL>;
+
+  using line = Seq<start, body, eol>;
+
+  return line::match(text);
+}
+
+//------------------------------------------------------------------------------
+// Multi-line nested comments
+
+const char* match_multiline_comment(const char* text);
+const char* match_comment_body(const char* text);
+
+const char* match_multiline_comment(const char* text) {
+  using Begin = Lit<"/*">;
+  using End   = Lit<"*/">;
+  using Item  = Seq<Not<Begin>, Not<End>, Char<>>;
+  using Body  = Ref<match_comment_body>;
+  using Delim = Seq<Begin, Body, End>;
+
+  return Delim::match(text);
+}
+
+const char* match_comment_body(const char* text) {
+  using Begin = Lit<"/*">;
+  using End   = Lit<"*/">;
+  using Item  = Seq<Not<Begin>, Not<End>, Char<>>;
+  using Delim = Ref<match_multiline_comment>;
+  using Body  = Any<Oneof<Delim,Item>>;
+
+  return Body::match(text);
+}
+
+/*
+const char* match_comment_manual(const char* text) {
+  if (text[0] != '/') return nullptr;
+  if (text[1] != '*') return nullptr;
+  text += 2;
+
+  while(text && *text) {
+    if (text[0] == '*' && text[1] == '/') {
+      return text + 2;
+    }
+    else if (text[0] == '/' && text[1] == '*') {
+      text = match_comment_manual(text);
+    }
+    else {
+      text++;
+    }
+  }
+
+  return text;
+}
+*/
 
 //------------------------------------------------------------------------------
 
@@ -14,7 +89,7 @@ const char* match_ws(const char* text) {
 
 //------------------------------------------------------------------------------
 
-const char* match_str(const char* text) {
+const char* match_string(const char* text) {
   using quote     = Char<'"'>;
   using notquote  = Seq<Not<quote>, Char<>>;
   using escaped   = Seq<Char<'\\'>, Char<>>;
@@ -26,12 +101,39 @@ const char* match_str(const char* text) {
 
 //------------------------------------------------------------------------------
 
-const char* match_id(const char* text) {
+const char* match_identifier(const char* text) {
   using first = Oneof<Range<'a','z'>, Range<'A','Z'>, Char<'_'>>;
   using rest  = Oneof<Range<'a','z'>, Range<'A','Z'>, Char<'_'>, Range<'0','9'>>;
-
   using match_id = Seq<first, Any<rest>>;
+
   return match_id::match(text);
+}
+
+//------------------------------------------------------------------------------
+// "foo/bar/file.txt"
+// <foo/bar/file.txt>
+
+const char* match_path(const char* text) {
+  using quote     = Char<'"'>;
+  using notquote  = Seq<Not<quote>, Char<>>;
+  using lbrack    = Char<'<'>;
+  using rbrack    = Char<'>'>;
+  using notbrack  = Seq<Not<lbrack>, Not<rbrack>, Char<>>;
+
+  using path1 = Seq<quote, Some<notquote>, quote>;
+  using path2 = Seq<lbrack, Some<notbrack>, rbrack>;
+
+  using match = Oneof<path1, path2>;
+
+  return match::match(text);
+}
+
+//------------------------------------------------------------------------------
+
+const char* match_preproc(const char* text) {
+  using chars = Range<'a','z'>;
+  using match = Seq< Char<'#'>, Some<chars>, And<Char<' '>> >;
+  return match::match(text);
 }
 
 //------------------------------------------------------------------------------
@@ -91,8 +193,33 @@ const char* match_float(const char* text) {
 
 //------------------------------------------------------------------------------
 
+const char* match_ab(const char* text) {
+  using matcher1 = Some<Char<'a','b'>>;
+  return matcher1::match(text);
+}
+
 #if 0
 int main2() {
+  LOG_R("main2\n");
+
+  {
+    using trigraphs = Trigraphs<"...<<=>>=">;
+
+    const char* text = ">>=||...<<==asdf";
+    printf("text {%s}\n", text);
+    text = match_punct(text);
+    printf("text {%s}\n", text);
+    text = match_punct(text);
+    printf("text {%s}\n", text);
+    text = match_punct(text);
+    printf("text {%s}\n", text);
+    text = match_punct(text);
+    printf("text {%s}\n", text);
+    text = match_punct(text);
+    printf("text {%s}\n", text);
+
+  }
+
   /*
   {
     const char* text = "123.0f tail";
@@ -111,6 +238,7 @@ int main2() {
   }
   */
 
+  /*
   {
     const char* text = R"("as\\df\)";
     const char* end1  = text + strlen(text);
@@ -121,6 +249,7 @@ int main2() {
     printf("end2 %p\n", end2);
     printf("end1 < end2 %d\n", end1 < end2);
   }
+  */
 
   /*
   {
@@ -131,6 +260,44 @@ int main2() {
     printf("match %s\n", end);
   }
   */
+
+  /*
+  {
+    using matcher2 = Ref<match_ab>;
+    const char* text = R"(abababababtail)";
+    printf("text  %s\n", text);
+    const char* end = matcher2::match(text);
+    printf("match %s\n", end);
+  }
+  */
+
+#if 0
+  {
+    volatile const char* text = R"(/*comment comment comment commentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcomment comment comment*/ */ tail)";
+    origin = (const char*)text;
+    printf("text  %s\n", text);
+    auto time_a = timestamp();
+    size_t accum = 0;
+    const int reps = 10000000;
+    for (int i = 0; i < reps; i++) {
+      const char* end = match_multiline_comment((const char*)text);
+      if (end) {
+        accum += end - text;
+      }
+    }
+    auto time_b = timestamp();
+
+    //char buf[256] = {0};
+    //if (end) memcpy(buf, text, end - text);
+    //printf("match {%s}\n", buf);
+    //printf("tail  {%s}\n", end);
+
+    printf("accum %ld\n", accum);
+    printf("time %f us\n", (time_b - time_a) * 1000000);
+    printf("rate %f reps/sec\n",  double(reps) / (time_b - time_a));
+    printf("rate %f bytes/sec\n", double(accum) / (time_b - time_a));
+  }
+#endif
 
   return 0;
 }

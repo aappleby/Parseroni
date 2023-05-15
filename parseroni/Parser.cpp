@@ -1,3 +1,17 @@
+#include "parseroni/Parser.h"
+
+#include "parseroni/Combinators.h"
+
+#include "metrolib/core/Log.h"
+
+#include <memory>
+#include <string.h>
+#include <assert.h>
+
+using namespace parseroni;
+
+using std::make_unique;
+
 /*
 The syntax of C in Backus-Naur Form
 
@@ -185,16 +199,6 @@ The syntax of C in Backus-Naur Form
 This grammar was adapted from Section A13 of The C programming language, 2nd edition, by Brian W. Kernighan and Dennis M. Ritchie,Prentice Hall, 1988.
 */
 
-#include "parseroni/Parser.h"
-
-#include "metrolib/core/Log.h"
-
-#include <memory>
-#include <string.h>
-#include <assert.h>
-
-using std::make_unique;
-
 //taker taker = [this]() { return take("asdf"); };
 
 bool isglyph(char c) {
@@ -284,16 +288,6 @@ Lexical elements[15]==
   String literals[53]
   Comments[55]
 
-identifier:
-  [_a-zA-Z][_a-zA-Z0-9]*
-
-comment:
-  | //.*$
-  | /_*(^*_/)*_/
-
-
-
-
 token:
   keyword
   identifier
@@ -310,90 +304,35 @@ preprocessing-token:
   each non-white-space character that cannot be one of the above
 
 keywords:
-  auto
-  break
-  case
-  char
-  const
-  continue
-  default
-  do
-  double
-  else
-  enum
-  extern
-  float
-  for
-  goto
-  if
-  inline
-  int
-  long
-  register
-  restrict
-  return
-  short
-  signed
-  sizeof
-  static
-  struct
-  switch
-  typedef
-  union
-  unsigned
-  void
-  volatile
-  while
-  _Alignas
-  _Alignof
-  _Atomic
-  _Bool
-  _Complex
-  _Generic
-  _Imaginary
-  _Noreturn
-  _Static_assert
-  _Thread_local
+  auto  break  case  char  const  continue  default  do  double  else  enum
+  extern  float  for  goto  if  inline  int  long  register  restrict  return
+  short  signed  sizeof  static  struct  switch  typedef  union  unsigned  void
+  volatile  while  _Alignas  _Alignof  _Atomic  _Bool  _Complex  _Generic
+  _Imaginary  _Noreturn  _Static_assert  _Thread_local
 */
 
 std::optional<cspan> Parser::take_token() {
-  start_span();
+  const char* end = nullptr;
 
-  if (isalpha(*cursor)) {
-    if (take_identifier()) {
-      return take_top_span();
-    }
+  if (end = match_identifier(cursor)) {
+    return take_span(end);
   }
-  else if (isdigit(*cursor)) {
-    if (take_number()) {
-      return take_top_span();
-    }
+  else if (end = match_int(cursor)) {
+    return take_span(end);
   }
-  else if (*cursor == '#') {
-    cursor++;
-    if (take_identifier()) {
-      return take_top_span();
-    }
+  else if (end = match_float(cursor)) {
+    return take_span(end);
   }
-  else if (*cursor == '"') {
-    if (take_string()) {
-      return take_top_span();
-    }
+  else if (end = match_preproc(cursor)) {
+    return take_span(end);
   }
-  else if (*cursor == '<') {
-    assert(false);
+  else if (end = match_string(cursor)) {
+    return take_span(end);
+  }
+  else if (end = match_punct(cursor)) {
+    return take_span(end);
   }
 
-  return drop_span();
-}
-
-//------------------------------------------------------------------------------
-
-std::optional<cspan> Parser::take_string() {
-  return std::nullopt;
-}
-
-std::optional<cspan> Parser::take_number() {
   return std::nullopt;
 }
 
@@ -409,6 +348,7 @@ node take_enumerator() {
 
 //------------------------------------------------------------------------------
 
+#if 0
 std::optional<cspan> Parser::take_digit(int base) {
   start_span();
 
@@ -436,9 +376,11 @@ std::optional<cspan> Parser::take_digit(int base) {
     return std::nullopt;
   }
 }
+#endif
 
 //------------------------------------------------------------------------------
 
+#if 0
 std::optional<cspan> Parser::take(const char* text) {
   if (*text == 0) return std::nullopt;
 
@@ -455,9 +397,11 @@ std::optional<cspan> Parser::take(const char* text) {
 
   return drop_span();
 }
+#endif
 
 //------------------------------------------------------------------------------
 
+#if 0
 std::optional<cspan> Parser::take(char c) {
   if (*cursor == c) {
     start_span();
@@ -468,9 +412,11 @@ std::optional<cspan> Parser::take(char c) {
     return std::nullopt;
   }
 }
+#endif
 
 //------------------------------------------------------------------------------
 
+#if 0
 std::optional<cspan> Parser::take_until(char c, int min) {
   start_span();
 
@@ -485,9 +431,11 @@ std::optional<cspan> Parser::take_until(char c, int min) {
     return drop_span();
   }
 }
+#endif
 
 //------------------------------------------------------------------------------
 
+#if 0
 std::optional<cspan> Parser::take_delimited(const char* prefix, const char* suffix, const char* escape) {
   start_span();
 
@@ -504,9 +452,11 @@ std::optional<cspan> Parser::take_delimited(const char* prefix, const char* suff
 
   return drop_span();
 }
+#endif
 
 //------------------------------------------------------------------------------
 
+#if 0
 std::optional<cspan> Parser::take_digits(int base, int count) {
   if (base == 0) return std::nullopt;
 
@@ -545,8 +495,8 @@ std::optional<cspan> Parser::take_digits(int base) {
   else {
     return take_top_span();
   }
-
 }
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -570,30 +520,15 @@ std::optional<cspan> Parser::take_ws_opt() {
 
 //------------------------------------------------------------------------------
 
-std::optional<cspan> Parser::take_str() {
+/*
+std::optional<cspan> Parser::take_string() {
   return take_delimited("\"", "\"", "\\");
 }
+*/
 
 //------------------------------------------------------------------------------
 
-std::optional<cspan> Parser::take_some(Parser::taker t) {
-  start_span();
-  int count = 0;
-
-  while(t()) {
-    count++;
-  }
-
-  if (count) {
-    return take_top_span();
-  }
-  else {
-    return std::nullopt;
-  }
-}
-
-//------------------------------------------------------------------------------
-
+#if 0
 std::optional<cspan> Parser::take_int() {
   start_span();
 
@@ -631,9 +566,11 @@ std::optional<cspan> Parser::take_int() {
     return drop_span();
   }
 }
+#endif
 
 //------------------------------------------------------------------------------
 
+#if 0
 std::optional<PInt> Parser::take_int_as_pint() {
   start_span();
 
@@ -685,9 +622,11 @@ std::optional<PInt> Parser::take_int_as_pint() {
     drop_span(); return std::nullopt;
   }
 }
+#endif
 
 //------------------------------------------------------------------------------
 
+#if 0
 std::optional<cspan> Parser::take_escape_seq() {
   start_span();
 
@@ -743,17 +682,11 @@ std::optional<cspan> Parser::take_escape_seq() {
 
   return drop_span();
 }
+#endif
 
 //------------------------------------------------------------------------------
 
-std::optional<cspan> Parser::take_include_path() {
-  if (*cursor == '"') return take_delimited("\"", "\"");
-  if (*cursor == '<') return take_delimited("<", ">");
-  return std::nullopt;
-}
-
-//------------------------------------------------------------------------------
-
+#if 0
 std::optional<PPreproc*> Parser::take_preproc() {
   if (*cursor != '#') return std::nullopt;
 
@@ -776,11 +709,13 @@ std::optional<PPreproc*> Parser::take_preproc() {
 
   return result;
 }
+#endif
 
 //------------------------------------------------------------------------------
 
+#if 0
 std::optional<cspan> Parser::take_primitive_type() {
- start_span();
+  start_span();
   if (take("void") || take("char") || take("short") || take("int") ||
       take("long") || take("float") || take("double")) {
     return take_top_span();
@@ -789,9 +724,11 @@ std::optional<cspan> Parser::take_primitive_type() {
     return drop_span();
   }
 }
+#endif
 
 //------------------------------------------------------------------------------
 
+#if 0
 std::optional<cspan> Parser::take_signed_specifier() {
  start_span();
   if (take("signed") || take("unsigned")) {
@@ -801,9 +738,11 @@ std::optional<cspan> Parser::take_signed_specifier() {
     return drop_span();
   }
 }
+#endif
 
 //------------------------------------------------------------------------------
 
+#if 0
 std::optional<cspan> Parser::take_storage_class_specifier() {
   start_span();
   if (take("auto") || take("register") || take("static") || take("extern") || take("typedef")) {
@@ -813,6 +752,7 @@ std::optional<cspan> Parser::take_storage_class_specifier() {
     return drop_span();
   }
 }
+#endif
 
 //------------------------------------------------------------------------------
 /*
@@ -821,6 +761,7 @@ std::optional<cspan> Parser::take_storage_class_specifier() {
                   | enum <identifier>
 */
 
+#if 0
 std::optional<cspan> Parser::take_enum_specifier() {
   start_span();
 
@@ -855,11 +796,13 @@ std::optional<cspan> Parser::take_enum_specifier() {
     return drop_span();
   }
 }
+#endif
 
 //------------------------------------------------------------------------------
 // <enumerator> ::= <identifier>
 //                | <identifier> = <constant-expression>
 
+#if 0
 std::optional<cspan> Parser::take_enumerator() {
   start_span();
 
@@ -871,11 +814,12 @@ std::optional<cspan> Parser::take_enumerator() {
 
   return take_top_span();
 }
-
+#endif
 
 //------------------------------------------------------------------------------
 // <enumerator-list> ::= <enumerator> | <enumerator-list> , <enumerator>
 
+#if 0
 std::optional<cspan> Parser::take_enumerator_list() {
   start_span();
 
@@ -895,18 +839,10 @@ std::optional<cspan> Parser::take_enumerator_list() {
 // alpha alnum*
 
 std::optional<cspan> Parser::take_identifier() {
-  start_span();
-
-  if (!isalpha(*cursor) && !(*cursor == '_')) return drop_span();
-  cursor++;
-
-  for (;cursor < source_end; cursor++) {
-    if (!isalnum(*cursor) && !isdigit(*cursor) && (*cursor != '_')) {
-      break;
-    }
+  if (auto end = match_identifier(cursor)) {
+    return take_span(end);
   }
-
-  return take_top_span();
+  return std::nullopt;
 }
 
 //------------------------------------------------------------------------------
@@ -1034,6 +970,7 @@ std::optional<cspan> Parser::take_type_qualifier() {
     return drop_span();
   }
 }
+#endif
 
 //------------------------------------------------------------------------------
 // translation-unit> = external_declaration*

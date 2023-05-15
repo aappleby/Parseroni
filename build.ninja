@@ -3,8 +3,9 @@ include rules.ninja
 ################################################################################
 # Config
 
-build_mode   = -DCONFIG_DEBUG -O0
+#build_mode   = -DCONFIG_DEBUG -O0
 #build_mode   = -DCONFIG_RELEASE -O3 -fcf-protection=none -fno-stack-protector
+build_mode   = -DCONFIG_RELEASE -O3
 #build_mode   = -DCONFIG_FASTMODE -O3
 
 default_gpp      = g++ -g -MMD -std=gnu++2a

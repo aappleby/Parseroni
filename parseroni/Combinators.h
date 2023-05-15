@@ -1,12 +1,18 @@
 #pragma once
 #include <algorithm>
 
-const char* match_str(const char* text);
-const char* match_id(const char* text);
+const char* match_string(const char* text);
+const char* match_identifier(const char* text);
 const char* match_int(const char* text);
 const char* match_float(const char* text);
+const char* match_punct(const char* text);
+const char* match_preproc(const char* text);
+const char* match_path(const char* text);
 
-namespace Parseroni {
+const char* match_oneline_comment(const char* text);
+const char* match_multiline_comment(const char* text);
+
+namespace parseroni {
 
 //------------------------------------------------------------------------------
 // Enables using strings as template arguments. Does _not_ include the trailing
@@ -53,6 +59,48 @@ struct Char<> {
 
 //------------------------------------------------------------------------------
 
+template<const char* (*F)(const char*)>
+struct Ref {
+  static const char* match(const char* cursor) {
+    return F(cursor);
+  }
+};
+
+//------------------------------------------------------------------------------
+
+template<typename M>
+struct Tws {
+  static const char* match(const char* cursor) {
+    cursor = M::match(cursor);
+    if(!cursor) return nullptr;
+    while(isspace(*cursor)) cursor++;
+    return cursor;
+  }
+};
+
+template<typename M>
+struct Lws {
+  static const char* match(const char* cursor) {
+    if(!cursor) return nullptr;
+    while(isspace(*cursor)) cursor++;
+    return M::match(cursor);
+  }
+};
+
+template<typename M>
+struct Ws {
+  static const char* match(const char* cursor) {
+    if(!cursor) return nullptr;
+    while(isspace(*cursor)) cursor++;
+    cursor = M::match(cursor);
+    if(!cursor) return nullptr;
+    while(isspace(*cursor)) cursor++;
+    return cursor;
+  }
+};
+
+//------------------------------------------------------------------------------
+
 struct NUL {
   static const char* match(const char* cursor) {
     if (!cursor) return nullptr;
@@ -69,7 +117,38 @@ struct Chars {
   static const char* match(const char* cursor) {
     if(!cursor) return nullptr;
     for (auto i = 0; i < sizeof(chars.value); i++) {
-      if (cursor[0] == chars.value[i]) return ++cursor;
+      if (cursor[0] == chars.value[i]) {
+        return cursor + 1;
+      }
+    }
+    return nullptr;
+  }
+};
+
+template<StringParam chars>
+struct Digraphs {
+  static const char* match(const char* cursor) {
+    if(!cursor) return nullptr;
+    for (auto i = 0; i < sizeof(chars.value); i += 2) {
+      if (cursor[0] == chars.value[i+0] &&
+          cursor[1] == chars.value[i+1]) {
+        return cursor + 2;
+      }
+    }
+    return nullptr;
+  }
+};
+
+template<StringParam chars>
+struct Trigraphs {
+  static const char* match(const char* cursor) {
+    if(!cursor) return nullptr;
+    for (auto i = 0; i < sizeof(chars.value); i += 3) {
+      if (cursor[0] == chars.value[i+0] &&
+          cursor[1] == chars.value[i+1] &&
+          cursor[2] == chars.value[i+2]) {
+        return cursor + 3;
+      }
     }
     return nullptr;
   }
@@ -102,6 +181,20 @@ struct Lit {
   }
 };
 
+template<StringParam lit>
+struct NLit {
+  static const char* match(const char* cursor) {
+    auto old_cursor = cursor;
+    if(!cursor) return nullptr;
+    if(!cursor[0]) return nullptr;
+    for (auto i = 0; i < sizeof(lit.value); i++) {
+      if (cursor[i] == 0) return old_cursor;
+      if (cursor[i] != lit.value[i]) return old_cursor;
+    }
+    return nullptr;
+  }
+};
+
 //------------------------------------------------------------------------------
 // M?
 
@@ -121,10 +214,10 @@ struct Any {
   static const char* match(const char* cursor) {
     while(1) {
       auto end = M::match(cursor);
-      if (!end) return cursor;
+      if (!end) break;
       cursor = end;
     }
-    return nullptr;
+    return cursor;
   }
 };
 
@@ -134,16 +227,23 @@ struct Any {
 template<typename M>
 struct Some {
   static const char* match(const char* cursor) {
-    if (cursor = M::match(cursor)) {
-      return Any<M>::match(cursor);
-    }
-    else {
-      return nullptr;
-    }
+    cursor = M::match(cursor);
+    return cursor ? Any<M>::match(cursor) : nullptr;
   }
 };
 
 //------------------------------------------------------------------------------
+// And predicate
+
+template<typename M>
+struct And {
+  static const char* match(const char* cursor) {
+    return M::match(cursor) ? cursor : nullptr;
+  }
+};
+
+//------------------------------------------------------------------------------
+// Not predicate
 
 template<typename M>
 struct Not {

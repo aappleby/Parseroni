@@ -13,6 +13,14 @@ struct cspan {
   const char* begin;
   const char* end;
 
+  bool operator == (const char* text) const {
+    int i = 0;
+    for (; i < size(); i++) {
+      if (begin[i] != text[i]) return false;
+    }
+    return text[i] == 0;
+  }
+
   char operator[](size_t i) const {
     assert(begin);
     assert(i < size());
@@ -21,6 +29,11 @@ struct cspan {
 
   size_t size() const { return end - begin; }
   bool empty() const { return end == begin; }
+
+  cspan operator + (const cspan& b) const {
+    assert(end == b.begin);
+    return cspan(begin, b.end);
+  }
 };
 
 void log_span(cspan s, uint32_t color = 0);
