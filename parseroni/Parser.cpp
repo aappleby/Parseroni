@@ -8,7 +8,7 @@
 #include <string.h>
 #include <assert.h>
 
-using namespace parseroni;
+using namespace matcheroni;
 
 using std::make_unique;
 
@@ -502,7 +502,7 @@ std::optional<cspan> Parser::take_digits(int base) {
 
 std::optional<cspan> Parser::take_ws() {
   start_span();
-  while(isspace(*cursor) && cursor < source_end) cursor++;
+  skip_ws();
 
   if (top_span().empty()) {
     return drop_span();
@@ -514,245 +514,67 @@ std::optional<cspan> Parser::take_ws() {
 
 std::optional<cspan> Parser::take_ws_opt() {
   start_span();
-  while(isspace(*cursor) && cursor < source_end) cursor++;
+  skip_ws();
   return take_top_span();
 }
 
 //------------------------------------------------------------------------------
 
-/*
-std::optional<cspan> Parser::take_string() {
-  return take_delimited("\"", "\"", "\\");
+std::optional<cspan> Parser::take(matcher m) {
+  return take_range(cursor, m(cursor));
 }
-*/
 
-//------------------------------------------------------------------------------
+std::optional<cspan> Parser::take_lit(const char* lit) {
+  return take_range(cursor, match_lit(cursor, lit));
+}
 
-#if 0
-std::optional<cspan> Parser::take_int() {
-  start_span();
-
-  // Consume a leading minus sign if present.
-  take('-');
-
-  if (take("0x")) {
-    // Hexadecimal
-    if (take_digits(16)) {
-      return take_top_span();
-    }
-    else {
-      return drop_span();
-    }
+std::optional<cspan> Parser::take_lit(const std::vector<const char*>& lits) {
+  for(auto lit : lits) {
+    if (auto r = take_lit(lit)) return r;
   }
-  else if (take("0b")) {
-    // Binary
-    if (take_digits(2)) {
-      return take_top_span();
-    }
-    else {
-      return drop_span();
-    }
-  }
-  else if (take("0")) {
-    // Octal or bare zero
-    take_digits(8);
-    return take_top_span();
-  }
-  else if (take_digits(10)) {
-    // Decimal
-    return take_top_span();
+  return std::nullopt;
+}
+
+std::optional<cspan> Parser::take_range(const char* begin, const char* end) {
+  if (begin && end && begin == cursor) {
+    cursor = end;
+    return cspan(begin, end);
   }
   else {
-    return drop_span();
+    return std::nullopt;
   }
 }
-#endif
 
 //------------------------------------------------------------------------------
 
-#if 0
-std::optional<PInt> Parser::take_int_as_pint() {
+PPreprocInclude* Parser::take_preproc_include() {
   start_span();
 
-  int base = 0;
-  uint64_t accum = 0;
+  auto lit_include = take_lit("#include");
+  auto lit_ws      = take(match_ws);
+  auto lit_path    = take(match_include_path);
 
-  bool negative = *cursor == '-';
-  if (negative) cursor++;
+  if (lit_include && lit_ws && lit_path) {
+    PPreprocInclude* result = new PPreprocInclude();
 
-  if (!isdigit(*cursor)) {
-    drop_span(); return std::nullopt;
-  }
+    result->lit_include = lit_include.value();
+    result->lit_ws      = lit_ws.value();
+    result->lit_path    = lit_path.value();
 
-  if (*cursor != '0') {
-    // starts with [1-9]
-    base = 10;
-  }
-  else if (isdigit(cursor[1])) {
-    // starts with 0[1-9]
-    cursor += 1;
-    base = 8;
-  }
-  else if (cursor[1] == 'b') {
-    // starts with 0b
-    cursor += 2;
-    base = 2;
-  }
-  else if (cursor[1] == 'x') {
-    // starts with 0x
-    cursor += 2;
-    base = 16;
-  }
-  else if ((ispunct(cursor[1]) && cursor[1] != '_') || cursor[1] == 0) {
-    // bare 0 followed by punctuation
-    return PInt(take_top_span(), negative, 0);
+    result->span = take_top_span();
+    return result;
   }
   else {
-    // bad prefix
-    drop_span(); return std::nullopt;
-  }
-
-  if (base && parse_digits(cursor, base, accum)) {
-    if (negative && accum > 0x8000000000000000) {
-      drop_span(); return std::nullopt;
-    }
-    return PInt(take_top_span(), negative, accum);
-  }
-  else {
-    drop_span(); return std::nullopt;
+    drop_span();
+    return nullptr;
   }
 }
-#endif
 
 //------------------------------------------------------------------------------
 
-#if 0
-std::optional<cspan> Parser::take_escape_seq() {
-  start_span();
-
-  switch (*cursor) {
-    case '\'':
-    case '"':
-    case '?':
-    case '\\':
-    case '\a':
-    case '\b':
-    case '\f':
-    case '\n':
-    case '\r':
-    case '\t':
-    case '\v':
-      take(*cursor);
-      return take_top_span();
-  }
-
-  auto bookmark = cursor;
-
-  // \nnn
-  if (take_digits(8, 3)) return take_top_span();
-  else cursor = bookmark;
-
-  // \o{n..}
-  if (take("o{") && take_digits(8) && take("}")) return take_top_span();
-  else cursor = bookmark;
-
-  // \xn..
-  if (take("x") && take_digits(16)) return take_top_span();
-  else cursor = bookmark;
-
-  // \x{n..}
-  if (take("x{") && take_digits(16) && take("}")) return take_top_span();
-  else cursor = bookmark;
-
-  // \unnnn
-  if (take("u") && take_digits(16, 4)) return take_top_span();
-  else cursor = bookmark;
-
-  // \u{n..}
-  if (take("u{") && take_digits(16) && take("}")) return take_top_span();
-  else cursor = bookmark;
-
-  // \Unnnnnnnn
-  if (take("U") && take_digits(16, 8)) return take_top_span();
-  else cursor = bookmark;
-
-  // \N{name}
-  if (take("N{") && take_until('}', 1) && take('}')) return take_top_span();
-  else cursor = bookmark;
-
-  return drop_span();
-}
-#endif
-
-//------------------------------------------------------------------------------
-
-#if 0
-std::optional<PPreproc*> Parser::take_preproc() {
-  if (*cursor != '#') return std::nullopt;
-
-  start_span();
-
-  auto lit_include = take("#include");
-  if (!lit_include) { drop_span(); return std::nullopt; }
-
-  auto lit_ws = take_ws();
-  if (!lit_ws) { drop_span(); return std::nullopt; }
-
-  auto lit_path = take_include_path();
-  if (!lit_path) { drop_span(); return std::nullopt; }
-
-  auto result = new PPreprocInclude();
-  result->span = take_top_span();
-  result->lit_include = lit_include.value();
-  result->lit_ws = lit_ws.value();
-  result->lit_path = lit_path.value();
-
-  return result;
-}
-#endif
-
-//------------------------------------------------------------------------------
-
-#if 0
-std::optional<cspan> Parser::take_primitive_type() {
-  start_span();
-  if (take("void") || take("char") || take("short") || take("int") ||
-      take("long") || take("float") || take("double")) {
-    return take_top_span();
-  }
-  else {
-    return drop_span();
-  }
-}
-#endif
-
-//------------------------------------------------------------------------------
-
-#if 0
-std::optional<cspan> Parser::take_signed_specifier() {
- start_span();
-  if (take("signed") || take("unsigned")) {
-    return take_top_span();
-  }
-  else {
-    return drop_span();
-  }
-}
-#endif
-
-//------------------------------------------------------------------------------
-
-#if 0
-std::optional<cspan> Parser::take_storage_class_specifier() {
-  start_span();
-  if (take("auto") || take("register") || take("static") || take("extern") || take("typedef")) {
-    return take_top_span();
-  }
-  else {
-    return drop_span();
-  }
-}
-#endif
+// const char* lits[] = {"void", "char", "short", "int", "long", "float", "double" };
+// const char* lits[] = { "signed", "unsigned" };
+// const char* lits[] = { "auto", "register", "static", "extern", "typedef" };
 
 //------------------------------------------------------------------------------
 /*
@@ -763,6 +585,16 @@ std::optional<cspan> Parser::take_storage_class_specifier() {
 
 #if 0
 std::optional<cspan> Parser::take_enum_specifier() {
+
+  using lit_enum  = Lit<"enum">;
+  using enum_list = Seq< Char<'{'>, enum_list, Char<'}'> >;
+
+  using form1 = Seq< lit_enum, identifier, Opt<enum_list> >;
+  using form2 = Seq< lit_enum, Opt<identifier>, enum_list >;
+
+  using match = Oneof<form1, form2>;
+
+
   start_span();
 
   // Mandatory enum

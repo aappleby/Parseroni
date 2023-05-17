@@ -1,5 +1,7 @@
 #pragma once
 
+#include "parseroni/Combinators.h"
+
 #include "metrolib/core/Log.h"
 
 #include <stdint.h>
@@ -8,33 +10,6 @@
 #include <assert.h>
 
 //typedef std::span<const char> cspan;
-
-struct cspan {
-  const char* begin;
-  const char* end;
-
-  bool operator == (const char* text) const {
-    int i = 0;
-    for (; i < size(); i++) {
-      if (begin[i] != text[i]) return false;
-    }
-    return text[i] == 0;
-  }
-
-  char operator[](size_t i) const {
-    assert(begin);
-    assert(i < size());
-    return begin[i];
-  }
-
-  size_t size() const { return end - begin; }
-  bool empty() const { return end == begin; }
-
-  cspan operator + (const cspan& b) const {
-    assert(end == b.begin);
-    return cspan(begin, b.end);
-  }
-};
 
 void log_span(cspan s, uint32_t color = 0);
 
@@ -173,9 +148,7 @@ struct PPreprocInclude : public PPreproc {
     PNode::dump();
     LOG_INDENT_SCOPE();
     log_span(lit_include, 0x00FFFF);
-    LOG("\n");
     log_span(lit_ws,      0xFF00FF);
-    LOG("\n");
     log_span(lit_path,    0xFFFF00);
     LOG("\n");
   }

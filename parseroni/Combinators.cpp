@@ -3,9 +3,53 @@
 
 #include <string.h>
 
-using namespace parseroni;
+using namespace matcheroni;
 
-const char* origin = nullptr;
+//------------------------------------------------------------------------------
+
+template<typename M>
+struct Tws {
+  static const char* match(const char* cursor) {
+    cursor = M::match(cursor);
+    if(!cursor) return nullptr;
+    while(isspace(*cursor)) cursor++;
+    return cursor;
+  }
+};
+
+template<typename M>
+struct Lws {
+  static const char* match(const char* cursor) {
+    if(!cursor) return nullptr;
+    while(isspace(*cursor)) cursor++;
+    return M::match(cursor);
+  }
+};
+
+template<typename M>
+struct Ws {
+  static const char* match(const char* cursor) {
+    if(!cursor) return nullptr;
+    while(isspace(*cursor)) cursor++;
+    cursor = M::match(cursor);
+    if(!cursor) return nullptr;
+    while(isspace(*cursor)) cursor++;
+    return cursor;
+  }
+};
+
+//------------------------------------------------------------------------------
+
+const char* match_lit(const char* text, const char* lit) {
+  while(*text && *lit) {
+    if (*text != *lit) {
+      return nullptr;
+    }
+    text++;
+    lit++;
+  }
+  return (*lit == 0) ? text : nullptr;
+}
 
 //------------------------------------------------------------------------------
 
@@ -25,9 +69,9 @@ const char* match_punct(const char* text) {
 const char* match_oneline_comment(const char* text) {
   using start = Lit<"//">;
   using body  = Any<Seq<Not<Char<'\n'>>, Char<>>>;
-  using eol   = Oneof<Char<'\n'>, NUL>;
+  using eol   = Oneof<Char<'\n'>, Char<0>>;
 
-  using line = Seq<start, body, eol>;
+  using line = Seq<start, body, And<eol>>;
 
   return line::match(text);
 }
@@ -39,6 +83,15 @@ const char* match_multiline_comment(const char* text);
 const char* match_comment_body(const char* text);
 
 const char* match_multiline_comment(const char* text) {
+  // not-nested version
+  using begin = Lit<"/*">;
+  using end   = Lit<"*/">;
+  using item  = Seq<Not<end>, Char<>>;
+  using body  = Seq<begin, Any<item>, end>;
+  return body::match(text);
+
+#if 0
+  // nested version
   using Begin = Lit<"/*">;
   using End   = Lit<"*/">;
   using Item  = Seq<Not<Begin>, Not<End>, Char<>>;
@@ -46,6 +99,7 @@ const char* match_multiline_comment(const char* text) {
   using Delim = Seq<Begin, Body, End>;
 
   return Delim::match(text);
+#endif
 }
 
 const char* match_comment_body(const char* text) {
@@ -58,28 +112,6 @@ const char* match_comment_body(const char* text) {
   return Body::match(text);
 }
 
-/*
-const char* match_comment_manual(const char* text) {
-  if (text[0] != '/') return nullptr;
-  if (text[1] != '*') return nullptr;
-  text += 2;
-
-  while(text && *text) {
-    if (text[0] == '*' && text[1] == '/') {
-      return text + 2;
-    }
-    else if (text[0] == '/' && text[1] == '*') {
-      text = match_comment_manual(text);
-    }
-    else {
-      text++;
-    }
-  }
-
-  return text;
-}
-*/
-
 //------------------------------------------------------------------------------
 
 const char* match_ws(const char* text) {
@@ -91,12 +123,20 @@ const char* match_ws(const char* text) {
 
 const char* match_string(const char* text) {
   using quote     = Char<'"'>;
-  using notquote  = Seq<Not<quote>, Char<>>;
-  using escaped   = Seq<Char<'\\'>, Char<>>;
-  using item      = Oneof<escaped, notquote>;
+  using item      = Seq<Oneof<Char<'\\'>, Not<quote>>, Char<>>;
   using match_str = Seq<quote, Any<item>, quote>;
 
   return match_str::match(text);
+}
+
+//------------------------------------------------------------------------------
+
+const char* match_raw_string(const char* text) {
+  using raw_a     = Lit<"R\"(">;
+  using raw_b     = Lit<")\"">;
+  using match_raw = Seq<raw_a, Any<Seq<Not<raw_b>, Char<>>>, raw_b>;
+
+  return match_raw::match(text);
 }
 
 //------------------------------------------------------------------------------
@@ -113,7 +153,7 @@ const char* match_identifier(const char* text) {
 // "foo/bar/file.txt"
 // <foo/bar/file.txt>
 
-const char* match_path(const char* text) {
+const char* match_include_path(const char* text) {
   using quote     = Char<'"'>;
   using notquote  = Seq<Not<quote>, Char<>>;
   using lbrack    = Char<'<'>;
@@ -139,10 +179,11 @@ const char* match_preproc(const char* text) {
 //------------------------------------------------------------------------------
 
 const char* match_int(const char* text) {
-  using bin_digit  = Range<'0','1'>;
-  using oct_digit  = Range<'0','7'>;
-  using dec_digit  = Range<'0','9'>;
-  using hex_digit  = Oneof<Range<'0','9'>, Range<'a','f'>, Range<'A','F'>>;
+  using tick       = Char<'\''>;
+  using bin_digit  = Oneof<Range<'0','1'>, tick>;
+  using oct_digit  = Oneof<Range<'0','7'>, tick>;
+  using dec_digit  = Oneof<Range<'0','9'>, tick>;
+  using hex_digit  = Oneof<Range<'0','9'>, Range<'a','f'>, Range<'A','F'>, tick>;
 
   using bin_prefix = Oneof<Lit<"0b">, Lit<"0B">>;
   using oct_prefix = Char<'0'>;
@@ -193,112 +234,63 @@ const char* match_float(const char* text) {
 
 //------------------------------------------------------------------------------
 
-const char* match_ab(const char* text) {
-  using matcher1 = Some<Char<'a','b'>>;
-  return matcher1::match(text);
-}
-
 #if 0
-int main2() {
-  LOG_R("main2\n");
+std::optional<cspan> Parser::take_escape_seq() {
+  start_span();
 
-  {
-    using trigraphs = Trigraphs<"...<<=>>=">;
-
-    const char* text = ">>=||...<<==asdf";
-    printf("text {%s}\n", text);
-    text = match_punct(text);
-    printf("text {%s}\n", text);
-    text = match_punct(text);
-    printf("text {%s}\n", text);
-    text = match_punct(text);
-    printf("text {%s}\n", text);
-    text = match_punct(text);
-    printf("text {%s}\n", text);
-    text = match_punct(text);
-    printf("text {%s}\n", text);
-
+  switch (*cursor) {
+    case '\'':
+    case '"':
+    case '?':
+    case '\\':
+    case '\a':
+    case '\b':
+    case '\f':
+    case '\n':
+    case '\r':
+    case '\t':
+    case '\v':
+      take(*cursor);
+      return take_top_span();
   }
 
-  /*
-  {
-    const char* text = "123.0f tail";
-    printf("text  %s\n", text);
-    const char* end = match_float(text);
-    printf("match %s\n", end);
-  }
-  */
+  auto bookmark = cursor;
 
-  /*
-  {
-    const char* text = "-0x1235459ABCDEFlu tail";
-    printf("text  %s\n", text);
-    const char* end = match_int(text);
-    printf("match %s\n", end);
-  }
-  */
+  // \nnn
+  if (take_digits(8, 3)) return take_top_span();
+  else cursor = bookmark;
 
-  /*
-  {
-    const char* text = R"("as\\df\)";
-    const char* end1  = text + strlen(text);
-    printf("text  %s\n", text);
-    const char* end2 = match_str(text);
-    printf("match %s\n", end2);
-    printf("end1 %p\n", end1);
-    printf("end2 %p\n", end2);
-    printf("end1 < end2 %d\n", end1 < end2);
-  }
-  */
+  // \o{n..}
+  if (take("o{") && take_digits(8) && take("}")) return take_top_span();
+  else cursor = bookmark;
 
-  /*
-  {
-    using matcher = Seq<Some<Char<'a','b'>>, NUL>;
-    const char* text = R"(ababababab)";
-    printf("text  %s\n", text);
-    const char* end = matcher::match(text);
-    printf("match %s\n", end);
-  }
-  */
+  // \xn..
+  if (take("x") && take_digits(16)) return take_top_span();
+  else cursor = bookmark;
 
-  /*
-  {
-    using matcher2 = Ref<match_ab>;
-    const char* text = R"(abababababtail)";
-    printf("text  %s\n", text);
-    const char* end = matcher2::match(text);
-    printf("match %s\n", end);
-  }
-  */
+  // \x{n..}
+  if (take("x{") && take_digits(16) && take("}")) return take_top_span();
+  else cursor = bookmark;
 
-#if 0
-  {
-    volatile const char* text = R"(/*comment comment comment commentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcommentcomment comment comment*/ */ tail)";
-    origin = (const char*)text;
-    printf("text  %s\n", text);
-    auto time_a = timestamp();
-    size_t accum = 0;
-    const int reps = 10000000;
-    for (int i = 0; i < reps; i++) {
-      const char* end = match_multiline_comment((const char*)text);
-      if (end) {
-        accum += end - text;
-      }
-    }
-    auto time_b = timestamp();
+  // \unnnn
+  if (take("u") && take_digits(16, 4)) return take_top_span();
+  else cursor = bookmark;
 
-    //char buf[256] = {0};
-    //if (end) memcpy(buf, text, end - text);
-    //printf("match {%s}\n", buf);
-    //printf("tail  {%s}\n", end);
+  // \u{n..}
+  if (take("u{") && take_digits(16) && take("}")) return take_top_span();
+  else cursor = bookmark;
 
-    printf("accum %ld\n", accum);
-    printf("time %f us\n", (time_b - time_a) * 1000000);
-    printf("rate %f reps/sec\n",  double(reps) / (time_b - time_a));
-    printf("rate %f bytes/sec\n", double(accum) / (time_b - time_a));
-  }
-#endif
+  // \Unnnnnnnn
+  if (take("U") && take_digits(16, 8)) return take_top_span();
+  else cursor = bookmark;
 
-  return 0;
+  // \N{name}
+  if (take("N{") && take_until('}', 1) && take('}')) return take_top_span();
+  else cursor = bookmark;
+
+  return drop_span();
 }
 #endif
+
+
+//------------------------------------------------------------------------------

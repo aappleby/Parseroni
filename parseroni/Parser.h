@@ -1,6 +1,7 @@
 #pragma once
 
 #include "parseroni/PNodes.h"
+#include "parseroni/Combinators.h"
 
 #include "metrolib/core/Result.h"
 
@@ -49,7 +50,20 @@ public:
   std::optional<cspan> take_token();
   std::optional<cspan> take_ws_opt();
   std::optional<cspan> take_ws();
+  std::optional<cspan> take(matcher m);
+  std::optional<cspan> take_lit(const char* lit);
+  std::optional<cspan> take_lit(const std::vector<const char*>& lits);
+  std::optional<cspan> take_range(const char* begin, const char* end);
 
+  PPreprocInclude* take_preproc_include();
+
+  void print_rest() {
+    printf("rest : {%s}\n", cursor);
+  }
+
+  void skip_ws() {
+    while(isspace(*cursor)) cursor++;
+  }
 
   //std::optional<cspan> take(char c);
   //std::optional<cspan> take_until(char c, int min = 0);
@@ -59,6 +73,7 @@ public:
   //std::optional<cspan> take_digits(int base, int len);
   //std::optional<cspan> take_digits(int base);
 
+  /*
   std::optional<cspan> take_constant_expression();
   std::optional<cspan> take_declaration_specifier();
   std::optional<cspan> take_declaration();
@@ -71,7 +86,6 @@ public:
   std::optional<cspan> take_include_path();
   std::optional<cspan> take_int();
   std::optional<cspan> take_pointer();
-  std::optional<cspan> take_primitive_type();
   std::optional<cspan> take_signed_specifier();
   std::optional<cspan> take_specifier_qualifier();
   std::optional<cspan> take_storage_class_specifier();
@@ -82,12 +96,12 @@ public:
   std::optional<cspan> take_type_qualifier();
   std::optional<cspan> take_type_specifier();
   std::optional<cspan> take_typedef_name();
-
-
   std::optional<PInt>  take_int_as_pint();
 
   //PPreproc* take_preproc();
   std::optional<PPreproc*> take_preproc();
+  */
+
   std::optional<PTranslationUnit*> take_translation_unit();
 
   // PNode* take_oneof(taker, ...);

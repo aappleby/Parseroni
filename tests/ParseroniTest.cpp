@@ -72,20 +72,20 @@ TestResults test_tokens() {
 
 //------------------------------------------------------------------------------
 
-TestResults test_match(std::function<const char*(const char*)> m, const char* text) {
+TestResults test_match(matcher m, const char* text) {
   TestResults results;
   auto end = text + strlen(text);
   EXPECT_EQ(end, m(text));
   return results;
 }
 
-TestResults test_no_match(std::function<const char*(const char*)> m, const char* text) {
+TestResults test_no_match(matcher m, const char* text) {
   TestResults results;
   EXPECT_EQ(nullptr, m(text));
   return results;
 }
 
-TestResults test_partial_match(std::function<const char*(const char*)> m, const char* text) {
+TestResults test_partial_match(matcher m, const char* text) {
   TestResults results;
   auto end = text + strlen(text);
   auto match = m(text);
@@ -554,22 +554,24 @@ TestResults test_match_identifier() {
 
 //------------------------------------------------------------------------------
 
-void print_match(std::function<const char*(const char*)> matcher, const char* text) {
+void print_match(matcher matcher, const char* text) {
   auto end = text + strlen(text);
   const char* match = matcher(text);
-  LOG_CHAR_C('[', 0x00FFFFFF);
+
+  auto& log = TinyLog::get();
+
+  log.color(0x00FFFFFF).print("[");
   if (match == nullptr) {
-    LOG_RANGE_C(text, end, 0x008080FF);
+    log.color(0x008080FF).write(text, end - text);
   }
   else {
-    LOG_RANGE_C(text, match, 0x0080FF80);
-    LOG_RANGE_C(match, end, 0x00404040);
+    log.color(0x0080FF80).write(text,  match - text);
+    log.color(0x00404040).write(match, end - match);
   }
-  LOG_CHAR_C(']', 0x00FFFFFF);
-  LOG("\n");
+  log.color(0x00FFFFFF).print("]\n");
 }
 
-std::string to_string(std::function<const char*(const char*)> matcher, const char* text) {
+std::string to_string(matcher matcher, const char* text) {
   auto end = matcher(text);
   if (end) {
     return std::string(text, end);
@@ -596,13 +598,40 @@ TestResults test_match_preproc() {
 
 //------------------------------------------------------------------------------
 
-TestResults test_match_path() {
+TestResults test_match_include_path() {
   TEST_INIT();
 
-  results << test_match(match_path, R"("foo/bar/baz.txt")");
-  results << test_match(match_path, R"(<foo/bar/baz.txt>)");
-  results << test_no_match(match_path, R"(<foo/bar/baz.txt<)");
-  results << test_no_match(match_path, R"(>foo/bar/baz.txt>)");
+  results << test_match(match_include_path, R"("foo/bar/baz.txt")");
+  results << test_match(match_include_path, R"(<foo/bar/baz.txt>)");
+  results << test_no_match(match_include_path, R"(<foo/bar/baz.txt<)");
+  results << test_no_match(match_include_path, R"(>foo/bar/baz.txt>)");
+
+  TEST_DONE();
+}
+
+//------------------------------------------------------------------------------
+
+TestResults test_take_include() {
+  TEST_INIT();
+
+  Parser p;
+  p.load(
+R"(
+
+#include "foo/bar/baz.txt"
+
+)");
+  p.skip_ws();
+
+  auto n = p.take_preproc_include();
+
+  if (n) {
+    n->dump();
+  }
+  else {
+  }
+
+  delete n;
 
   TEST_DONE();
 }
@@ -611,24 +640,29 @@ TestResults test_match_path() {
 
 //int main2();
 
+TestResults test_thingy();
+
 int main(int argc, char** argv) {
   LOG_G("Hello Test World\n");
 
   //main2();
 
   TestResults r;
-  r << test_basic();
+  r << test_thingy();
 
+#if 0
+  r << test_basic();
   r << test_match_int();
   //r << test_take_int();
   r << test_take_lit();
   r << test_take_str();
   r << test_tokens();
-  r << test_match_path();
+  r << test_match_include_path();
   r << test_match_preproc();
-
+  r << test_take_include();
   r << test_preproc_include();
   r << test_hello_world();
+#endif
 
   return r.show_result();
 }
