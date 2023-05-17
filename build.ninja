@@ -18,8 +18,8 @@ build obj/parseroni/ParseroniApp.o : compile_cpp parseroni/ParseroniApp.cpp
 build obj/parseroni/Parser.o       : compile_cpp parseroni/Parser.cpp
 build obj/parseroni/Combinators.o  : compile_cpp parseroni/Combinators.cpp
 build obj/parseroni/NewThingy.o    : compile_cpp parseroni/NewThingy.cpp
-
-build obj/tests/ParseroniTest.o : compile_cpp tests/ParseroniTest.cpp
+build obj/parseroni/Matcheroni.o   : compile_cpp parseroni/Matcheroni.cpp
+build obj/tests/ParseroniTest.o    : compile_cpp tests/ParseroniTest.cpp
 
 build obj/MetroLib : run_command
   command = ninja -C symlinks/MetroLib
@@ -28,6 +28,7 @@ build bin/parseroni : link $
   obj/parseroni/Parser.o $
   obj/parseroni/Combinators.o $
   obj/parseroni/NewThingy.o $
+  obj/parseroni/Matcheroni.o $
   obj/parseroni/ParseroniApp.o $
   symlinks/MetroLib/bin/metrolib/libcore.a $
   | obj/MetroLib
@@ -36,6 +37,7 @@ build bin/parseroni_test : link $
   obj/parseroni/Parser.o $
   obj/parseroni/Combinators.o $
   obj/parseroni/NewThingy.o $
+  obj/parseroni/Matcheroni.o $
   obj/tests/ParseroniTest.o $
   symlinks/MetroLib/bin/metrolib/libcore.a $
   | obj/MetroLib

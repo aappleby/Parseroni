@@ -1,6 +1,5 @@
-#pragma once
-
-#include <functional>
+#ifndef __MATCHERONI_H__
+#define __MATCHERONI_H__
 
 namespace matcheroni {
 
@@ -165,32 +164,21 @@ struct Not {
   }
 };
 
-
-
-
-
-
-
-
-
 //------------------------------------------------------------------------------
-// Not-chars-in-set matcher, which is a bit faster than using
+// Char-not-in-set matcher, which is a bit faster than using
 // Seq<Not<Char<...>>, Char<>>
 
-template <char... rest>
-struct NChar;
-
 template <char C1, char... rest>
-struct NChar<C1, rest...> {
+struct NotChar {
   static const char* match(const char* cursor) {
     if (!cursor) return nullptr;
     if (cursor[0] == C1) return nullptr;
-    return NChar<rest...>::match(cursor);
+    return NotChar<rest...>::match(cursor);
   }
 };
 
 template <char C1>
-struct NChar<C1> {
+struct NotChar<C1> {
   static const char* match(const char* cursor) {
     if (!cursor) return nullptr;
     if (cursor[0] == C1) return nullptr;
@@ -213,7 +201,7 @@ struct Range {
 //------------------------------------------------------------------------------
 // Repetition, equivalent to M{N} in regex.
 
-template<size_t N, typename M>
+template<int N, typename M>
 struct Rep {
   static const char* match(const char* cursor) {
     for(auto i = 0; i < N; i++) {
@@ -229,9 +217,14 @@ struct Rep {
 // template arguments. The parameter behaves as a fixed-length character array
 // that does ___NOT___ include the trailing null.
 
-template<size_t N>
+template<int N>
 struct StringParam {
-  constexpr StringParam(const char (&str)[N]) { std::copy_n(str, N-1, value); }
+  constexpr StringParam(const char (&str)[N]) {
+    for (int i = 0; i < N-1; i++) {
+      value[i] = str[i];
+    }
+    //std::copy_n(str, N-1, value);
+  }
   char value[N-1];
 };
 
@@ -316,3 +309,5 @@ struct Ref {
 //------------------------------------------------------------------------------
 
 }; // namespace Matcheroni
+
+#endif // #ifndef __MATCHERONI_H__

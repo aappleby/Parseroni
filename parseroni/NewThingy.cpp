@@ -32,35 +32,6 @@ struct SourceMark {
   int end;
 };
 
-const char* match_space(const char* text) {
-  using ws = Char<' ','\t'>;
-  return ws::match(text);
-}
-
-const char* match_newline(const char* text) {
-  //using nl = Oneof<Lit<"\r\n">, Char<'\r'>, Char<'\n'>>;
-  using nl = Some<Oneof<Char<'\r'>, Char<'\n'>>>;
-  return nl::match(text);
-}
-
-const char* match_escape(const char* text) {
-  using octal_digit   = Range<'0','7'>;
-  using escaped_octal = Seq<Char<'\\'>, octal_digit, octal_digit, octal_digit>;
-  using escaped_char  = Seq<Char<'\\'>, Char<'0', 'a', 'b', 'f', 'n', 'r', 'v', 't', '\\', '\''>>;
-
-  using escaped = Oneof<escaped_octal, escaped_char>;
-
-  return escaped::match(text);
-}
-
-const char* match_char_literal(const char* text) {
-  using tick = Char<'\''>;
-  using escaped = Ref<match_escape>;
-  using unescaped = Char<>;
-  using match = Seq<tick, Oneof<escaped, unescaped>, tick>;
-  return match::match(text);
-}
-
 void log_span(const char* start, const char* end, uint32_t color = 0) {
   auto& log = TinyLog::get();
 
@@ -235,21 +206,23 @@ void benchmark() {
   buf.back() = 0;
   //printf("%s\n", buf.c_str());
 
+  std::regex paren_match_regex(R"(\([^()]+\))");
+
   for (int rep = 0; rep < 10; rep++) {
     double r_time_a, r_time_b;
     double m_time_a, m_time_b;
     double c_time_a, c_time_b;
+    double i_time_a, i_time_b;
 
     {
       //std::regex paren_match_regex(R"(\(\w+\))");
-      std::regex paren_match_regex(R"(\([^()]+\))");
       //std::regex paren_match_regex(R"(\([^)]+\))");
 
       int matches = 0;
       r_time_a = timestamp();
       const char* cursor = buf.c_str();
-      while(cursor && cursor[0]) {
-        std::cmatch m;
+      std::cmatch m;
+      while(cursor[0]) {
         if (std::regex_search(cursor, m, paren_match_regex)) {
           matches++;
           auto p = m.position();
@@ -271,16 +244,31 @@ void benchmark() {
     }
 
     {
+      std::cregex_iterator it (buf.data(), buf.data() + buf_size, paren_match_regex);
+      std::cregex_iterator end;
+
+      int matches = 0;
+      i_time_a = timestamp();
+      while (it != end) {
+        matches++;
+        ++it;
+      }
+      i_time_b = timestamp();
+      printf("std::regex_iterator match count %d\n", matches);
+      printf("std::regex_iterator elapsed time %f ms\n", (i_time_b - i_time_a) * 1000.0);
+    }
+
+    {
       using lparen = Char<'('>;
       using rparen = Char<')'>;
-      using item   = Seq<Not<lparen>, Not<rparen>, Char<>>;
-      //using item = NChar<'(', ')'>;
+      //using item   = Seq<Not<lparen>, Not<rparen>, Char<>>;
+      using item = NotChar<'(', ')'>;
       using match  = Seq<lparen, Some<item>, rparen>;
 
       int matches = 0;
       m_time_a = timestamp();
       const char* cursor = buf.c_str();
-      while(cursor && cursor[0]) {
+      while(cursor[0]) {
         if (auto end = match::match(cursor)) {
           matches++;
           cursor = end;
@@ -300,7 +288,7 @@ void benchmark() {
       const char* cursor = buf.c_str();
       const char* mark = 0;
 
-      while(cursor && cursor[0]) {
+      while(cursor[0]) {
         if (*cursor == '(') {
           mark = cursor;
         } else if (*cursor == ')') {
@@ -316,6 +304,7 @@ void benchmark() {
     }
 
     printf("Matcheroni is %f times faster than std::regex\n", (r_time_b - r_time_a) / (m_time_b - m_time_a));
+    printf("Matcheroni is %f times faster than std::regex_iterator\n", (i_time_b - i_time_a) / (m_time_b - m_time_a));
     printf("Matcheroni is %f times faster than manual\n", (c_time_b - c_time_a) / (m_time_b - m_time_a));
   }
 }

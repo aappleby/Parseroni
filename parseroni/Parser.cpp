@@ -524,6 +524,20 @@ std::optional<cspan> Parser::take(matcher m) {
   return take_range(cursor, m(cursor));
 }
 
+//------------------------------------------------------------------------------
+
+const char* match_lit(const char* text, const char* lit) {
+  while(*text && *lit) {
+    if (*text != *lit) {
+      return nullptr;
+    }
+    text++;
+    lit++;
+  }
+  return (*lit == 0) ? text : nullptr;
+}
+
+
 std::optional<cspan> Parser::take_lit(const char* lit) {
   return take_range(cursor, match_lit(cursor, lit));
 }

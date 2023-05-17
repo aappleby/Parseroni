@@ -53,6 +53,9 @@ struct cspan {
 };
 
 
+const char* match_space(const char* text);
+const char* match_newline(const char* text);
+const char* match_char_literal(const char* text);
 const char* match_string(const char* text);
 const char* match_identifier(const char* text);
 const char* match_int(const char* text);
@@ -63,6 +66,5 @@ const char* match_include_path(const char* text);
 const char* match_lit(const char* text, const char* lit);
 const char* match_ws(const char* text);
 const char* match_raw_string(const char* text);
-
 const char* match_oneline_comment(const char* text);
 const char* match_multiline_comment(const char* text);
