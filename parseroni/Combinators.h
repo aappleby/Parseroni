@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <functional>
 
-#include "parseroni/Matcheroni.h"
+#include "symlinks/Matcheroni/Matcheroni.h"
 
 using matcher = std::function<const char*(const char*)>;
 

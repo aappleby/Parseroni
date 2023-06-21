@@ -10,7 +10,7 @@ build_mode   = -DCONFIG_RELEASE -O3
 
 default_gpp      = g++ -g -MMD -std=c++20
 default_gcc      = gcc -g -MMD
-default_includes = -I. -Isymlinks/MetroLib
+default_includes = -I. -Isymlinks/MetroLib -Isymlinks/Matcheroni
 
 ################################################################################
 
@@ -18,7 +18,9 @@ build obj/parseroni/ParseroniApp.o : compile_cpp parseroni/ParseroniApp.cpp
 build obj/parseroni/Parser.o       : compile_cpp parseroni/Parser.cpp
 build obj/parseroni/Combinators.o  : compile_cpp parseroni/Combinators.cpp
 build obj/parseroni/NewThingy.o    : compile_cpp parseroni/NewThingy.cpp
-build obj/parseroni/Matcheroni.o   : compile_cpp parseroni/Matcheroni.cpp
+
+build obj/parseroni/Matcheroni.o   : compile_cpp symlinks/Matcheroni/examples.cpp
+
 build obj/tests/ParseroniTest.o    : compile_cpp tests/ParseroniTest.cpp
 
 build obj/MetroLib : run_command
